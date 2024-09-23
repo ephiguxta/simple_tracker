@@ -22,13 +22,13 @@ void setup() {
 }
 
 void loop() {
-  if(Serial1.available() > 0) {
+  if (Serial1.available() > 0) {
     gps.encode(Serial1.read());
   }
 
   Serial.printf("(%d:%d:%d) lat: %.6f lon: %.6f\n",
-    gps.time.hour(), gps.time.minute(), gps.time.second(),
-    gps.location.lat(), gps.location.lng());
-  
+                gps.time.hour(), gps.time.minute(), gps.time.second(),
+                gps.location.lat(), gps.location.lng());
+
   delay(500);
 }
