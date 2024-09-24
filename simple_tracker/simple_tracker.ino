@@ -1,4 +1,5 @@
 #include <TinyGPSPlus.h>
+#include <string.h>
 #include "BluetoothSerial.h"
 
 BluetoothSerial SerialBT;
@@ -22,13 +23,22 @@ void setup() {
 }
 
 void loop() {
+  char msg[64] = { 0 };
+
   if (Serial1.available() > 0) {
-    gps.encode(Serial1.read());
+    char data = Serial1.read();
+    //Serial.printf("%c", data);
+    gps.encode(data);
+    delay(16);
   }
 
-  Serial.printf("(%d:%d:%d) lat: %.6f lon: %.6f\n",
-                gps.time.hour(), gps.time.minute(), gps.time.second(),
-                gps.location.lat(), gps.location.lng());
+  snprintf(msg, 64, "(%d:%d:%d) lat: %.6f lon: %.6f\n",
+           gps.time.hour(), gps.time.minute(), gps.time.second(),
+           gps.location.lat(), gps.location.lng());
 
-  delay(500);
+  uint16_t msg_size = strlen(msg);
+  for (uint16_t i = 0; i < msg_size; i++) {
+    SerialBT.write(msg[i]);
+    delay(16);
+  }
 }
