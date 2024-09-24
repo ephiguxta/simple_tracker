@@ -8,6 +8,8 @@ TinyGPSPlus gps;
 const uint8_t rx = 16;
 const uint8_t tx = 17;
 
+bool check_lat_lng();
+
 void setup() {
   SerialBT.begin("telemetria");
   delay(32);
@@ -23,7 +25,7 @@ void setup() {
 }
 
 void loop() {
-  char msg[64] = { 0 };
+  uint8_t msg[64] = { 0 };
 
   if (Serial1.available() > 0) {
     char data = Serial1.read();
@@ -32,13 +34,21 @@ void loop() {
     delay(16);
   }
 
-  snprintf(msg, 64, "(%d:%d:%d) lat: %.6f lon: %.6f\n",
+  snprintf((char *)msg, 64, "(%d:%d:%d) lat: %.6f lon: %.6f\n",
            gps.time.hour(), gps.time.minute(), gps.time.second(),
            gps.location.lat(), gps.location.lng());
 
-  uint16_t msg_size = strlen(msg);
-  for (uint16_t i = 0; i < msg_size; i++) {
-    SerialBT.write(msg[i]);
-    delay(16);
+  if (check_lat_lng()) {
+    uint8_t msg_size = strlen((const char *)msg);
+    SerialBT.write(msg, msg_size);
+    delay(256);
   }
+}
+
+bool check_lat_lng() {
+  if (gps.location.lat() == 0 || gps.location.lng() == 0) {
+    return false;
+  }
+
+  return true;
 }
