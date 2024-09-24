@@ -1,7 +1,9 @@
 #include <TinyGPSPlus.h>
 #include <string.h>
+#include <HTTPClient.h>
 #include <WiFi.h>
 #include "wifi.h"
+#include "tg_credentials.h"
 
 TinyGPSPlus gps;
 
@@ -50,6 +52,7 @@ void loop() {
     uint8_t msg_size = strlen((const char *)msg);
     Serial.printf("%s", msg);
     // SerialBT.write(msg, msg_size);
+    send_data2tg();
     delay(256);
   }
 }
@@ -62,4 +65,16 @@ bool check_lat_lng() {
   }
 
   return false;
+}
+
+bool send_data2tg() {
+  char post_url[128] = { 0 };
+  WiFiClient client;
+  HTTPClient http;
+
+  http.begin(client, endpoint);
+  const char *params = ""
+  snprintf(post_url, 75, "%s/bot%s", endpoint, key);
+  
+  return true;
 }
