@@ -7,7 +7,7 @@ const uint8_t rx = 16;
 const uint8_t tx = 17;
 
 //bool check_lat_lng();
-bool valid_char(char data);
+bool valid_char(const char data);
 
 void setup() {
   SerialBT.begin("telemetria");
