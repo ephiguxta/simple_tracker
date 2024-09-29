@@ -9,11 +9,8 @@ void loop() {
   if(n_bytes > 0) {
     for(int i = 0; i < n_bytes; i++) {
       char data = Serial3.read();
-      if (data == '\r') {
-        continue;
-      }
       Serial.print(data);
-      delay(16);
+      _delay_us(200);
     }
   }
 }
