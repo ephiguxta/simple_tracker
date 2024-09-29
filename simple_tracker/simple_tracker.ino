@@ -8,6 +8,8 @@ const uint8_t tx = 17;
 
 //bool check_lat_lng();
 bool valid_char(const char data);
+uint8_t find_null_byte_pos();
+bool is_gnrmc_line();
 
 void setup() {
   SerialBT.begin("telemetria");
@@ -26,13 +28,17 @@ void setup() {
 
 void loop() {
   char msg[128] = { 0 };
-  Serial1.setTimeout(1000);
 
   if (Serial1.available() > 0) {
     char data;
 
     for (uint8_t i = 0; i < 128; i++) {
       data = Serial1.read();
+
+      if (data == '\0') {
+        msg[i] = data;
+        break;
+      }
 
       // se o dado não for um caractere válido e não iniciar com '$'
       if ((i == 0 && data != '$') || !valid_char(data)) {
@@ -45,8 +51,12 @@ void loop() {
     }
   }
 
-  Serial.printf("%s\n", msg);
-  delay(0.5);
+  // Serial.printf("%s\n", msg);
+  if (msg[0] != 0x00) {
+    Serial.printf("(%s) [%d]\n", msg, find_null_byte_pos(msg));
+  }
+
+  delay(50);
 
   /*
   snprintf((char *)msg, 64, "(%d:%d:%d) lat: %.6f lon: %.6f\n",
@@ -61,7 +71,7 @@ void loop() {
   */
 }
 
-bool valid_char(char data) {
+bool valid_char(const char data) {
   if (data >= 'A' && data <= 'Z') {
     return true;
   }
@@ -76,6 +86,20 @@ bool valid_char(char data) {
 
   return false;
 }
+
+uint8_t find_null_byte_pos(const char msg[128]) {
+  uint8_t null_byte_pos = 0;
+
+  for (uint8_t i = 0; i < 128; i++) {
+    if (msg[i] == 0x00) {
+      null_byte_pos = i;
+      break;
+    }
+  }
+
+  return null_byte_pos;
+}
+
 /*
 bool check_lat_lng() {
   if (gps.location.lat() == 0 || gps.location.lng() == 0) {
