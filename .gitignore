@@ -1,0 +1,6 @@
+tg_credentials.h
+wifi.h
+*.swp
+.env
+__pycache__
+env/
