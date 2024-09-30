@@ -58,7 +58,10 @@ void loop() {
     uint16_t checksum = line_checksum(null_byte_pos, msg);
 
     // 0x3030 == '00'
-    if (checksum != 0x3030 && is_gnrmc_line(msg)) {
+    // if (checksum != 0x3030 && is_gnrmc_line(msg)) {
+    if(checksum != 0x3030) {
+      SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
+
       Serial.printf("(%s) ", msg);
       Serial.printf("%c%c\n", ((checksum & 0xff00) >> 8), (checksum & 0x00ff));
     }
