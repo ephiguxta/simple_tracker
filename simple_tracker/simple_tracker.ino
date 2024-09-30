@@ -8,8 +8,9 @@ const uint8_t tx = 17;
 
 //bool check_lat_lng();
 bool valid_char(const char data);
-uint8_t find_null_byte_pos();
-bool is_gnrmc_line();
+uint8_t find_null_byte_pos(const char msg[128]);
+// bool is_gnrmc_line(const char msg[128]);
+uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
 
 void setup() {
   SerialBT.begin("telemetria");
@@ -53,10 +54,13 @@ void loop() {
 
   // Serial.printf("%s\n", msg);
   if (msg[0] != 0x00) {
-    Serial.printf("(%s) [%d]\n", msg, find_null_byte_pos(msg));
+    uint8_t null_byte_pos = find_null_byte_pos(msg);
+    uint16_t checksum = line_checksum(null_byte_pos, msg);
+    Serial.printf("(%s) ", msg);
+    Serial.printf("%c%c\n", ((checksum & 0xff00) >> 8), (checksum & 0x00ff));
   }
 
-  delay(50);
+  delay(25);
 
   /*
   snprintf((char *)msg, 64, "(%d:%d:%d) lat: %.6f lon: %.6f\n",
@@ -100,6 +104,27 @@ uint8_t find_null_byte_pos(const char msg[128]) {
   return null_byte_pos;
 }
 
+uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
+  // 0x30 == '0'
+  uint16_t checksum = 0x3030;
+
+  if (null_byte_pos > 6) {
+    char data = msg[null_byte_pos - 3];
+
+    if (data == '*') {
+      uint8_t msb = msg[null_byte_pos - 2];
+      uint8_t lsb = msg[null_byte_pos - 1];
+
+      // filtro pra ordenar os bytes e caber num uint16_t
+      checksum = 0x00ff & lsb;
+      checksum |= (0xff00 & (msb << 8));
+    }
+
+    return checksum;
+  }
+
+  return checksum;
+}
 /*
 bool check_lat_lng() {
   if (gps.location.lat() == 0 || gps.location.lng() == 0) {
