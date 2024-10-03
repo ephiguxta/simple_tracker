@@ -68,18 +68,6 @@ void loop() {
   }
 
   delay(25);
-
-  /*
-  snprintf((char *)msg, 64, "(%d:%d:%d) lat: %.6f lon: %.6f\n",
-           gps.time.hour(), gps.time.minute(), gps.time.second(),
-           gps.location.lat(), gps.location.lng());
-
-  if (check_lat_lng()) {
-    uint8_t msg_size = strlen((const char *)msg);
-    SerialBT.write(msg, msg_size);
-    delay(256);
-  }
-  */
 }
 
 bool valid_char(const char data) {
