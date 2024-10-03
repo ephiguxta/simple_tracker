@@ -9,7 +9,7 @@ const uint8_t tx = 17;
 //bool check_lat_lng();
 bool valid_char(const char data);
 uint8_t find_null_byte_pos(const char msg[128]);
-bool is_gnrmc_line(const char msg[128]);
+bool line_has_lat_lng(const char msg[128]);
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
 
 void setup() {
@@ -58,8 +58,8 @@ void loop() {
     uint16_t checksum = line_checksum(null_byte_pos, msg);
 
     // 0x3030 == '00'
-    // if (checksum != 0x3030 && is_gnrmc_line(msg)) {
-    if(checksum != 0x3030) {
+    if (checksum != 0x3030 && line_has_lat_lng(msg)) {
+    // if(checksum != 0x3030) {
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
 
       Serial.printf("(%s) ", msg);
@@ -133,31 +133,22 @@ uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
   return checksum;
 }
 
-bool is_gnrmc_line(const char msg[128]) {
+bool line_has_lat_lng(const char msg[128]) {
   char tag[6] = { 0 };
-  tag[5] = '\0';
 
   for (uint8_t i = 1; i <= 5; i++) {
     tag[i - 1] = msg[i];
   }
 
-  const char *gnrmc_tag = "GNRMC";
-  bool is_gnrmc = true;
-  for (uint8_t i = 0; i < 5; i++) {
-    if (tag[i] != gnrmc_tag[i]) {
-      is_gnrmc = false;
+  const char valid_tags[4][6] = {
+    "GNRMC", "GPRMC", "GNGGA", "GPGGA"
+  };
+
+  for(uint8_t i = 0; i < 4; i++) {
+    if(strncmp(valid_tags[i], tag, 5) == 0) {
+      return true;
     }
   }
 
-  return is_gnrmc;
+  return false;
 }
-
-/*
-bool check_lat_lng() {
-  if (gps.location.lat() == 0 || gps.location.lng() == 0) {
-    return false;
-  }
-
-  return true;
-}
-*/
