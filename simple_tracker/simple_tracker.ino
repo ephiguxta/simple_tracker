@@ -3,9 +3,6 @@
 
 BluetoothSerial SerialBT;
 
-const uint8_t rx = 16;
-const uint8_t tx = 17;
-
 //bool check_lat_lng();
 bool valid_char(const char data);
 uint8_t find_null_byte_pos(const char msg[128]);
@@ -23,19 +20,16 @@ void setup() {
 
   Serial.begin(9600);
   delay(32);
-
-  Serial1.begin(9600, SERIAL_8N1, rx, tx);
-  delay(32);
 }
 
 void loop() {
   char msg[128] = { 0 };
 
-  if (Serial1.available() > 0) {
+  if (Serial.available() > 0) {
     char data;
 
     for (uint8_t i = 0; i < 128; i++) {
-      data = Serial1.read();
+      data = Serial.read();
 
       if (data == '\0') {
         msg[i] = data;
@@ -109,10 +103,26 @@ bool valid_checksum(const char msg[128]) {
     checksum ^= msg[i];
   }
 
-  // TODO: adicione na chamada do setup essa função para que a linha
-  // só seja enviada se for uma tag válida e o checksum também.
-  //
-  if(possible_checksum == checksum) {
+  uint8_t msb = (possible_checksum >> 8) - '0';
+  uint8_t lsb = (possible_checksum & 0x00ff) - '0';
+  if (lsb > 9) {
+    lsb -= 1;
+  }
+
+  // FIXME: descomente o print abaixo e perceba que
+  // quando o valor dor lsb é maior que 9 ele retorna dois
+  // dígitos, por exemplo 'a' fica como 10.
+  // então... valores com checksum válido mas com lsb maior
+  // que 9 serão perdidos
+  /*
+  Serial.printf("[%x %x] (%x == %x) (%x == %x)\n",
+    possible_checksum, checksum,
+	 msb, ( (checksum & 0xf0) >> 4),
+	 lsb, (checksum & 0x0f)
+  );
+  */
+
+  if ( (msb == ( (checksum & 0xf0) >> 4)) && (lsb == (checksum & 0x0f)) ) {
     return true;
   }
 
