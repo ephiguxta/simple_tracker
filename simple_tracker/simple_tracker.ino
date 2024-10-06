@@ -53,12 +53,9 @@ void loop() {
 
     // 0x3030 == '00'
     if (checksum != 0x3030 && line_has_lat_lng(msg) && valid_checksum(msg)) {
-    // if(checksum != 0x3030) {
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
 
-      Serial.printf("\n(%s) ", msg);
-      Serial.printf("%c%c ", ((checksum & 0xff00) >> 8), (checksum & 0x00ff));
-      valid_checksum(msg);
+      Serial.printf("(%s)\n", msg);
     }
   }
 
@@ -105,22 +102,13 @@ bool valid_checksum(const char msg[128]) {
 
   uint8_t msb = (possible_checksum >> 8) - '0';
   uint8_t lsb = (possible_checksum & 0x00ff) - '0';
-  if (lsb > 9) {
-    lsb -= 1;
-  }
 
-  // FIXME: descomente o print abaixo e perceba que
-  // quando o valor dor lsb é maior que 9 ele retorna dois
-  // dígitos, por exemplo 'a' fica como 10.
-  // então... valores com checksum válido mas com lsb maior
-  // que 9 serão perdidos
-  /*
-  Serial.printf("[%x %x] (%x == %x) (%x == %x)\n",
-    possible_checksum, checksum,
-	 msb, ( (checksum & 0xf0) >> 4),
-	 lsb, (checksum & 0x0f)
-  );
-  */
+  // Essa subtração serve para "burlar" um bug que temos quando
+  // o lsb fica maior que 9, por exemplo se for 'a' ele retorna 11
+  // O -7 funcionou e não faço ideia do porquê :)
+  if (lsb > 9) {
+    lsb -= 7;
+  }
 
   if ( (msb == ( (checksum & 0xf0) >> 4)) && (lsb == (checksum & 0x0f)) ) {
     return true;
