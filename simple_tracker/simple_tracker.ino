@@ -11,6 +11,7 @@ bool valid_char(const char data);
 uint8_t find_null_byte_pos(const char msg[128]);
 bool line_has_lat_lng(const char msg[128]);
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
+bool valid_checksum(const char msg[128]);
 
 void setup() {
   SerialBT.begin("telemetria");
@@ -52,18 +53,18 @@ void loop() {
     }
   }
 
-  // Serial.printf("%s\n", msg);
   if (msg[0] != 0x00) {
     uint8_t null_byte_pos = find_null_byte_pos(msg);
     uint16_t checksum = line_checksum(null_byte_pos, msg);
 
     // 0x3030 == '00'
-    if (checksum != 0x3030 && line_has_lat_lng(msg)) {
+    if (checksum != 0x3030 && line_has_lat_lng(msg) && valid_checksum(msg)) {
     // if(checksum != 0x3030) {
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
 
-      Serial.printf("(%s) ", msg);
-      Serial.printf("%c%c\n", ((checksum & 0xff00) >> 8), (checksum & 0x00ff));
+      Serial.printf("\n(%s) ", msg);
+      Serial.printf("%c%c ", ((checksum & 0xff00) >> 8), (checksum & 0x00ff));
+      valid_checksum(msg);
     }
   }
 
@@ -99,6 +100,25 @@ uint8_t find_null_byte_pos(const char msg[128]) {
   return null_byte_pos;
 }
 
+bool valid_checksum(const char msg[128]) {
+  uint8_t null_byte_pos = find_null_byte_pos(msg);
+  uint16_t possible_checksum = line_checksum(null_byte_pos, msg);
+
+  uint16_t checksum = 0x0000;
+  for(uint8_t i = 1; i < null_byte_pos - 3; i++) {
+    checksum ^= msg[i];
+  }
+
+  // TODO: adicione na chamada do setup essa função para que a linha
+  // só seja enviada se for uma tag válida e o checksum também.
+  //
+  if(possible_checksum == checksum) {
+    return true;
+  }
+
+  return false;
+}
+
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
   // 0x30 == '0'
   uint16_t checksum = 0x3030;
@@ -128,6 +148,7 @@ bool line_has_lat_lng(const char msg[128]) {
     tag[i - 1] = msg[i];
   }
 
+  // TODO: GPGLL também é uma linha que contém lat e lng
   const char valid_tags[4][6] = {
     "GNRMC", "GPRMC", "GNGGA", "GPGGA"
   };
