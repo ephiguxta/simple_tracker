@@ -146,9 +146,8 @@ bool line_has_lat_lng(const char msg[128]) {
     tag[i - 1] = msg[i];
   }
 
-  // TODO: GPGLL também é uma linha que contém lat e lng
   const char valid_tags[4][6] = {
-    "GNRMC", "GPRMC", "GNGGA", "GPGGA"
+    "GNRMC", "GPRMC", "GNGGA", "GPGGA", "GPGLL"
   };
 
   for(uint8_t i = 0; i < 4; i++) {
