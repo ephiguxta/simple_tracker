@@ -6,10 +6,13 @@ BluetoothSerial SerialBT;
 //bool check_lat_lng();
 bool valid_char(const char data);
 uint8_t find_null_byte_pos(const char msg[128]);
-bool line_has_lat_lng(const char msg[128]);
+void get_lat_lng(const char msg[128], int tag_num);
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
+int tag_id(const char msg[128]);
 bool valid_checksum(const char msg[128]);
 
+// TODO: faça essa variável existir apenas nas funções que precisam dela
+// todas as chamadas terão ela como parâmetro
 static char tag[6] = { 0 };
 
 void setup() {
@@ -53,10 +56,19 @@ void loop() {
     uint8_t null_byte_pos = find_null_byte_pos(msg);
     uint16_t checksum = line_checksum(null_byte_pos, msg);
 
+    int tag = 0;
+    tag = tag_id(msg);
+
     // 0x3030 == '00'
-    if (checksum != 0x3030 && line_has_lat_lng(msg) && valid_checksum(msg)) {
+    if (checksum != 0x3030 && valid_checksum(msg) && tag) {
+      Serial.printf("(%s) ", msg);
+
+      // TODO: crie um terceiro parâmetro "location" onde será atribuído
+      // os valores de lat e lng da linha atual, essa variável deve ser
+      // local a função setup
+      get_lat_lng(msg, tag);
+
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
-      Serial.printf(" (%s)\n", msg);
     }
   }
 
@@ -140,7 +152,40 @@ uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
   return checksum;
 }
 
-bool line_has_lat_lng(const char msg[128]) {
+void get_lat_lng(const char msg[128], int first_pos) {
+  int pos = 0;
+  switch(first_pos) {
+    case 1:
+    case 2:
+      pos = 2;
+      break;
+
+   case 3:
+   case 4:
+      pos = 3;
+      break;
+
+   case 5:
+      pos = 1;
+      break;
+  }
+
+  int comma_count = 0;
+  for(int i = 0; i < 128; i++) {
+    if(msg[i] == ',') {
+      comma_count++;
+    }
+
+    // TODO: assim como foi dito no TODO da função setup, faça com que
+    // os dados sejam atribuídos a uma variável e não apenas "printados"
+    if(comma_count >= pos && comma_count <= pos + 3) {
+      Serial.printf("%c", msg[i + 1]);
+    }
+  }
+  Serial.println();
+}
+
+int tag_id(const char msg[128]) {
   char msg_tag[6] = { 0 };
 
   for (uint8_t i = 1; i <= 5; i++) {
@@ -148,16 +193,15 @@ bool line_has_lat_lng(const char msg[128]) {
     tag[i - 1] = msg[i];
   }
 
-
   const char valid_tags[5][6] = {
-    "GNRMC", "GPRMC", "GNGGA", "GPGGA", "GPGLL"
+    "GNGGA", "GPGGA", "GNRMC", "GPRMC", "GPGLL"
   };
 
   for(uint8_t i = 0; i < 4; i++) {
-    if(strncmp(valid_tags[i], msg_tag, 5) == 0) {
-      return true;
+    if(strncmp(valid_tags[i], msg_tag, 6) == 0) {
+      return i + 1;
     }
   }
 
-  return false;
+  return 0;
 }
