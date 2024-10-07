@@ -10,6 +10,8 @@ bool line_has_lat_lng(const char msg[128]);
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
 bool valid_checksum(const char msg[128]);
 
+static char tag[6] = { 0 };
+
 void setup() {
   SerialBT.begin("telemetria");
   delay(32);
@@ -54,8 +56,7 @@ void loop() {
     // 0x3030 == '00'
     if (checksum != 0x3030 && line_has_lat_lng(msg) && valid_checksum(msg)) {
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
-
-      Serial.printf("(%s)\n", msg);
+      Serial.printf(" (%s)\n", msg);
     }
   }
 
@@ -140,18 +141,20 @@ uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
 }
 
 bool line_has_lat_lng(const char msg[128]) {
-  char tag[6] = { 0 };
+  char msg_tag[6] = { 0 };
 
   for (uint8_t i = 1; i <= 5; i++) {
+    msg_tag[i - 1] = msg[i];
     tag[i - 1] = msg[i];
   }
 
-  const char valid_tags[4][6] = {
+
+  const char valid_tags[5][6] = {
     "GNRMC", "GPRMC", "GNGGA", "GPGGA", "GPGLL"
   };
 
   for(uint8_t i = 0; i < 4; i++) {
-    if(strncmp(valid_tags[i], tag, 5) == 0) {
+    if(strncmp(valid_tags[i], msg_tag, 5) == 0) {
       return true;
     }
   }
