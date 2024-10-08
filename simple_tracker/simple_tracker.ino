@@ -1,12 +1,16 @@
 #include <string.h>
 #include "BluetoothSerial.h"
+#include "FS.h"
+#include "SD_MMC.h"
+
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 BluetoothSerial SerialBT;
 
-//bool check_lat_lng();
 bool valid_char(const char data);
 uint8_t find_null_byte_pos(const char msg[128]);
-void get_lat_lng(const char msg[128], int tag_num);
+// void get_lat_lng(const char msg[128], int tag_num);
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
 int tag_id(const char msg[128]);
 bool valid_checksum(const char msg[128]);
@@ -14,8 +18,10 @@ bool valid_checksum(const char msg[128]);
 // TODO: faça essa variável existir apenas nas funções que precisam dela
 // todas as chamadas terão ela como parâmetro
 static char tag[6] = { 0 };
+// char coords[32] =  { 0 };
 
 void setup() {
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   SerialBT.begin("telemetria");
   delay(32);
 
@@ -24,7 +30,12 @@ void setup() {
   SerialBT.getBtAddress(mac_addr);
 
   Serial.begin(9600);
-  delay(32);
+  delay(100);
+
+  if(!SD_MMC.begin()) {
+    delay(1000);
+    Serial.printf("Montagem do cartão SD falhou!\n");
+  }
 }
 
 void loop() {
@@ -61,14 +72,15 @@ void loop() {
 
     // 0x3030 == '00'
     if (checksum != 0x3030 && valid_checksum(msg) && tag) {
-      Serial.printf("(%s) ", msg);
-
-      // TODO: crie um terceiro parâmetro "location" onde será atribuído
-      // os valores de lat e lng da linha atual, essa variável deve ser
-      // local a função setup
-      get_lat_lng(msg, tag);
-
+      Serial.printf("(%s)\n", msg);
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
+
+      msg[null_byte_pos] = '\n';
+      File file = SD_MMC.open("/gps_log.txt", FILE_APPEND);
+		// TODO: tratar para caso isso falhe
+      file.print(msg);
+      delay(100);
+      file.close();
     }
   }
 
@@ -152,7 +164,13 @@ uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
   return checksum;
 }
 
+/*
 void get_lat_lng(const char msg[128], int first_pos) {
+
+  for(int i = 0; i < 32; i++) {
+    coords[i] = '\0';
+  }
+
   int pos = 0;
   switch(first_pos) {
     case 1:
@@ -176,14 +194,13 @@ void get_lat_lng(const char msg[128], int first_pos) {
       comma_count++;
     }
 
-    // TODO: assim como foi dito no TODO da função setup, faça com que
-    // os dados sejam atribuídos a uma variável e não apenas "printados"
     if(comma_count >= pos && comma_count <= pos + 3) {
-      Serial.printf("%c", msg[i + 1]);
+      coords[i] = msg[i + 1];
     }
   }
   Serial.println();
 }
+*/
 
 int tag_id(const char msg[128]) {
   char msg_tag[6] = { 0 };
