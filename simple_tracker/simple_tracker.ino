@@ -20,6 +20,8 @@ bool valid_checksum(const char msg[128]);
 static char tag[6] = { 0 };
 // char coords[32] =  { 0 };
 
+unsigned long my_time = 0;
+
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   SerialBT.begin("telemetria");
@@ -72,15 +74,20 @@ void loop() {
 
     // 0x3030 == '00'
     if (checksum != 0x3030 && valid_checksum(msg) && tag) {
-      Serial.printf("(%s)\n", msg);
+      Serial.printf("[%ld] (%s)\n", millis(), msg);
       SerialBT.write((const uint8_t *) msg, null_byte_pos + 1);
 
-      msg[null_byte_pos] = '\n';
-      File file = SD_MMC.open("/gps_log.txt", FILE_APPEND);
-		// TODO: tratar para caso isso falhe
-      file.print(msg);
-      delay(100);
-      file.close();
+      // salvando os dados a cada 2min no cartão sd
+      // 120e3 ms == 2min
+      if((millis() - my_time) >= 120000) {
+        my_time = millis();
+        msg[null_byte_pos] = '\n';
+        File file = SD_MMC.open("/gps_log.txt", FILE_APPEND);
+        // TODO: tratar para caso isso falhe
+        file.print(msg);
+        delay(100);
+        file.close();
+      }
     }
   }
 
