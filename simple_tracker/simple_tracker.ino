@@ -14,8 +14,6 @@ uint8_t find_null_byte_pos(const char msg[128]);
 uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]);
 int tag_id(const char msg[128]);
 bool valid_checksum(const char msg[128]);
-bool check_command(void);
-void send_gps_line(const char msg[128]);
 
 // TODO: faça essa variável existir apenas nas funções que precisam dela
 // todas as chamadas terão ela como parâmetro
@@ -81,15 +79,7 @@ void loop() {
       msg[null_byte_pos] = '\r';
       msg[null_byte_pos + 1] = '\n';
 
-      // TODO: enviar "0,0" quando o não houver dados mesmo com a
-      // mensagem sendo válida.
-
-      // caso houver uma linha válida e o cliente pedir os dados
-      if(check_command()) {
-        send_gps_line(msg);
-      }
-
-      // SerialBT.write((const uint8_t *) msg, null_byte_pos + 2);
+      SerialBT.write((const uint8_t *) msg, find_null_byte_pos(msg));
 
       // salvando os dados a cada 2min no cartão sd
       // 120e3 ms == 2min
@@ -203,38 +193,4 @@ int tag_id(const char msg[128]) {
   }
 
   return 0;
-}
-
-bool check_command(void) {
-  const char valid_cmd[5] = "/get";
-  char cmd[5] = { 0 };
-
-  uint8_t cmd_size = SerialBT.available();
-  if (cmd_size > 5) {
-
-    char invalid_cmd[32] = { 0 };
-    for(int i = 0; i < cmd_size; i++) {
-      char data = SerialBT.read();
-      invalid_cmd[i] = data;
-    }
-
-    Serial.printf("Recebi um comando de %d bytes: %s\n",
-      cmd_size, invalid_cmd);
-    return false;
-  }
-
-  for(int i = 0; i < cmd_size; i++) {
-    cmd[i] = SerialBT.read();
-  }
-
-  if(strncmp(cmd, valid_cmd, 4) == 0) {
-    return true;
-  }
-
-  return false;
-}
-
-void send_gps_line(const char msg[128]) {
-  SerialBT.write((const uint8_t *) msg, find_null_byte_pos(msg));
-  return;
 }
