@@ -184,44 +184,6 @@ uint16_t line_checksum(const uint8_t null_byte_pos, const char msg[128]) {
   return checksum;
 }
 
-/*
-void get_lat_lng(const char msg[128], int first_pos) {
-
-  for(int i = 0; i < 32; i++) {
-    coords[i] = '\0';
-  }
-
-  int pos = 0;
-  switch(first_pos) {
-    case 1:
-    case 2:
-      pos = 2;
-      break;
-
-   case 3:
-   case 4:
-      pos = 3;
-      break;
-
-   case 5:
-      pos = 1;
-      break;
-  }
-
-  int comma_count = 0;
-  for(int i = 0; i < 128; i++) {
-    if(msg[i] == ',') {
-      comma_count++;
-    }
-
-    if(comma_count >= pos && comma_count <= pos + 3) {
-      coords[i] = msg[i + 1];
-    }
-  }
-  Serial.println();
-}
-*/
-
 int tag_id(const char msg[128]) {
   char msg_tag[6] = { 0 };
 
@@ -230,8 +192,8 @@ int tag_id(const char msg[128]) {
     tag[i - 1] = msg[i];
   }
 
-  const char valid_tags[5][6] = {
-    "GNGGA", "GPGGA", "GNRMC", "GPRMC", "GPGLL"
+  const char valid_tags[6][6] = {
+    "GNGGA", "GPGGA", "GNRMC", "GPRMC", "GPGLL", "GPZDA"
   };
 
   for(uint8_t i = 0; i < 4; i++) {
