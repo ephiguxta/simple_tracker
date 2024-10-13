@@ -18,9 +18,12 @@ bool valid_checksum(const char msg[128]);
 // TODO: faça essa variável existir apenas nas funções que precisam dela
 // todas as chamadas terão ela como parâmetro
 static char tag[6] = { 0 };
-// char coords[32] =  { 0 };
 
 unsigned long my_time = 0;
+
+// armazena a última mensagem do gps para fazer uma comparação com a
+// mensagem seguinte
+char old_msg[128] = { 0 };
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -79,7 +82,15 @@ void loop() {
       msg[null_byte_pos] = '\r';
       msg[null_byte_pos + 1] = '\n';
 
-      SerialBT.write((const uint8_t *) msg, find_null_byte_pos(msg));
+      // caso a nova linha gerada pelo gps for igual a anterior,
+      // não enviamos ao cliente.
+      if(strncmp(old_msg, msg, 128) != 0) {
+        for(int i = 0; i < 128; i++) {
+          old_msg[i] = msg[i];
+        }
+
+        SerialBT.write((const uint8_t *) msg, find_null_byte_pos(msg));
+      }
 
       // salvando os dados a cada 2min no cartão sd
       // 120e3 ms == 2min
